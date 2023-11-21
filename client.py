@@ -1,7 +1,7 @@
 import socket
 import sys
 import json
-
+# Checks if the user input username and password match the json file
 def authenticate(username, password):
     with open('user_pass.json', 'r') as file:
         user_pass_data = json.load(file)
@@ -20,7 +20,8 @@ def get_valid_username():
             print("Username must contain only alphanumeric characters.")
         else:
             return username
-        
+            
+# Checks for valid password        
 def get_valid_password():
     while True:
         password = input("Enter your password: ").strip()
@@ -56,7 +57,6 @@ def client():
         # Authenticate user
         if authenticate(username, password):
             print("Authentication successful!")
-            menu = clientSocket.recv(2048)
         else:
             print("Invalid username or password.\nTerminating.")
             
