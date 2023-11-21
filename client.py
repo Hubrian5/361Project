@@ -26,8 +26,6 @@ def get_valid_password():
         password = input("Enter your password: ").strip()
         if len(password) < 1:
             print("Password must be at least 1 characters long.")
-        elif not password.isalnum():
-            print("Password must contain only alphanumeric characters.")
         else:
             return password
         
