@@ -36,12 +36,12 @@ def client():
         message = rsa_server.encrypt(pad(message,16)) #encrypt user input and send to server
         clientSocket.send(message)
         
-        #Get server response for vaildating user info
+        #Get server response for validating user info
         reply = clientSocket.recv(2048)
         if(reply == "Invalid username or password.\nTerminating.".encode('ascii')): #Check if server vaildated user
             print(reply.decode('ascii')) #User was not vaildated
             clientSocket.close()
-        else: #User was vaildated
+        else: #User was validated
             currentClientPrivate = open(userName + "_private.pem", 'r') #Get client public key
             currentClientPrivateKey = RSA.import_key(currentClientPrivate.read())
             currentClientPrivate.close() 
@@ -50,9 +50,9 @@ def client():
             sym_key = rsa_client.decrypt(reply)
             sym_key = unpad(sym_key,16)  
             cipher = AES.new(sym_key, AES.MODE_ECB) #Create AES cipher
-        #Send confrim message to server stating that we have recived the symmetric key
-        confrim = cipher.encrypt(pad("OK".encode('ascii'),16))
-        clientSocket.send(confrim)
+        #Send confirm message to server stating that we have recived the symmetric key
+        confirm = cipher.encrypt(pad("OK".encode('ascii'),16))
+        clientSocket.send(confirm)
         userChoice = '0'
         while(userChoice != '4'):
             menu = clientSocket.recv(2048)
