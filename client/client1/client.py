@@ -55,8 +55,8 @@ def client():
         #Send confrim message to server stating that we have recived the symmetric key
         confrim = cipher.encrypt(pad("OK".encode('ascii'),16))
         clientSocket.send(confrim)
-
-        while True:
+        choice = '0'
+        while choice != '4':
             menu = clientSocket.recv(2048)
             menu = cipher.decrypt(menu)
             menu = unpad(menu,16)
@@ -106,11 +106,6 @@ def client():
                 ok = "OK"
                 ok = encrypt_message(ok, cipher)
                 clientSocket.send(ok)
-            if choice == '4':
-                terminate = clientSocket.recv(2048)
-                terminate = decrypt_bytes(terminate, cipher)
-                clientSocket.close()
-                break
                
         # Client terminate connection with the server
         print("The connection is terminated with the server.")
