@@ -1,3 +1,11 @@
+'''
+client.py
+Author(s): 
+Course: CMPT361-X01L
+Instructor: Mohammed Elmorsy
+Project
+Date: November 24, 2023
+'''
 import socket
 import sys
 import json
@@ -9,7 +17,7 @@ from Crypto.Util.Padding import pad, unpad
 def client():
     # Server Information
     serverName = input("Enter the server IP or name: ")
-    serverPort = 13000
+    serverPort = 17000
     
     #Create client socket that useing IPv4 and TCP protocols 
     try:
@@ -42,28 +50,70 @@ def client():
             print(reply.decode('ascii')) #User was not vaildated
             clientSocket.close()
         else: #User was vaildated
-            currentClientPrivate = open(userName + "_private.pem", 'r') #Get client public key
-            currentClientPrivateKey = RSA.import_key(currentClientPrivate.read())
-            currentClientPrivate.close() 
-            rsa_client = PKCS1_OAEP.new(currentClientPrivateKey)
-            #Get and create symmetric key
-            sym_key = rsa_client.decrypt(reply)
-            sym_key = unpad(sym_key,16)  
-            cipher = AES.new(sym_key, AES.MODE_ECB) #Create AES cipher
+            cipher = create_cipher(userName, reply)
+            
         #Send confrim message to server stating that we have recived the symmetric key
         confrim = cipher.encrypt(pad("OK".encode('ascii'),16))
         clientSocket.send(confrim)
-        userChoice = '0'
-        while(userChoice != '4'):
+
+        while True:
             menu = clientSocket.recv(2048)
             menu = cipher.decrypt(menu)
             menu = unpad(menu,16)
             menu = menu.decode('ascii')
             print(menu)
             userChoice = input("\tChoice: ")
+            choice = userChoice #choice taken from user input
             sendUserChoice = cipher.encrypt(pad(userChoice.encode('ascii'),16))
             clientSocket.send(sendUserChoice)
+            message = clientSocket.recv(2048)
+            message = decrypt_bytes(message, cipher)
+            if choice == '1':
+                print("Entering Sp1") #dev check
+                destination = input(message)
+                destination = encrypt_message(destination, cipher)
+                clientSocket.send(destination)
+                
+                message = clientSocket.recv(2048)
+                message = decrypt_bytes(message, cipher)
+                title = input(message)
+                title = encrypt_message(title, cipher)
+                clientSocket.send(title)
+                
+                message = clientSocket.recv(2048)
+                message = decrypt_bytes(message, cipher)
+                query = input(message)
+                query = encrypt_message(query, cipher)
+                clientSocket.send(query)
+                
+            if choice == '2':
+                print("Entering Sp2") #dev check
+                print(message)
+                ok = "OK"
+                ok = encrypt_message(ok, cipher)
+                clientSocket.send(ok)
+                
+            if choice == '3':
+                print("Entering Sp3") #dev check
+                index = input(message)
+                index = encrypt_message(index, cipher)
+                clientSocket.send(index)
+                
+                email = clientSocket.recv(2048)
+                email = decrypt_bytes(email, cipher)
+                print(email)
+                
+                ok = "OK"
+                ok = encrypt_message(ok, cipher)
+                clientSocket.send(ok)
+            if choice == '4':
+                terminate = clientSocket.recv(2048)
+                terminate = decrypt_bytes(terminate, cipher)
+                clientSocket.close()
+                break
+               
         # Client terminate connection with the server
+        print("The connection is terminated with the server.")
         clientSocket.close()
         
     except socket.error as e:
@@ -72,4 +122,40 @@ def client():
         sys.exit(1)
 
 #----------
+'''
+Function gets the key from the key file, gets and sym key and returns cipher
+'''
+def create_cipher(user_Name, reply):
+    fName = user_Name + "_private.pem"
+    with open(fName, "r") as currentClientPrivate:
+        currentClientPrivateKey = RSA.import_key(currentClientPrivate.read())
+    rsa_client = PKCS1_OAEP.new(currentClientPrivateKey)
+    #Get and create symmetric key
+    sym_key = rsa_client.decrypt(reply)
+    sym_key = unpad(sym_key,16)  
+    cipher = AES.new(sym_key, AES.MODE_ECB) #Create AES cipher
+    return cipher
+    
+'''
+Function takes a string message,encodes and encrypts it (AES) using the key with ECB mode. Function
+returns the encrypted message.
+'''
+def encrypt_message(message, cipher):
+    m_bytes = cipher.encrypt(pad(message.encode('ascii'),16))
+    return m_bytes
+
+'''
+Function takes an encrypted message in AES mode ECB format, and the key to decrypt the message. 
+Function returns the decrypted message
+'''
+def decrypt_bytes(m_bytes, cipher):
+    
+    #Start of decryption
+    Padded_message = cipher.decrypt(m_bytes)
+    
+    #Remove padding
+    Encodedmessage = unpad(Padded_message,16)
+    Encodedmessage = Encodedmessage.decode('ascii')
+    return Encodedmessage
+    
 client()
