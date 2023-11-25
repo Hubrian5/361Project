@@ -1,3 +1,11 @@
+'''
+server.py
+Author(s): 
+Course: CMPT361-X01L
+Instructor: Mohammed Elmorsy
+Project
+Date: November 24, 2023
+'''
 import socket
 import sys
 import os
@@ -9,7 +17,7 @@ from Crypto.Random import get_random_bytes
 
 def server():
     #Server port
-    serverPort = 13000
+    serverPort = 17000
     
     #Create server socket that uses IPv4 and TCP protocols 
     try:
@@ -63,14 +71,9 @@ def server():
                 if(userName in realUserName): #Check if user name vaild
                     if(realUsersPasswords[userName] == password): #If user name is vaild check password
                         print("Connection Accepted and Symmetric Key Generated for client: " + userName) #Password and user name match
-                        currentClientPublic = open("./" + userName + "/" + userName + "_public.pem", 'r') #Get client public key
-                        currentClientPublicKey = RSA.import_key(currentClientPublic.read())
-                        currentClientPublic.close() 
-                        rsa_client = PKCS1_OAEP.new(currentClientPublicKey)
-                        sym_key = get_random_bytes(32)  #Generate a random 256 bit symmetric key
-                        message = rsa_client.encrypt(pad(sym_key,16)) #Encrypt new key and send to user
-                        connectionSocket.send(message)
-                        cipher = AES.new(sym_key, AES.MODE_ECB) #Create AES cipher
+                        message, cipher = create_cipher(userName)
+                        #print(cipher, message) dev check
+                        connectionSocket.send(message) 
                     else: #Password did not match
                         message = "Invalid username or password.\nTerminating.".encode('ascii')
                         connectionSocket.send(message)
@@ -87,16 +90,69 @@ def server():
                 confrim = unpad(confrim, 16)
                 confrim = confrim.decode('ascii')
                 if(confrim == "OK"):
-                    userChoice = '0'
-                    while(userChoice != '4'):
+                   
+                    while True:
                         menu = "Select the operation:\n\t1) Create and send an email\n\t2) Display the inbox list\n\t3) Display the email contents\n\t4) Terminate the connection\n"
                         menu = cipher.encrypt(pad(menu.encode('ascii'),16))
                         connectionSocket.send(menu)
                         userChoice = connectionSocket.recv(2048)
-                        userChoice = cipher.decrypt(userChoice)
-                        userChoice = unpad(userChoice, 16)
-                        userChoice = userChoice.decode('ascii')
+                        userChoice = decrypt_bytes(userChoice, cipher)
+                        if userChoice == '1':
+                            print("protocol 1")
+                            emailMessage = "Enter destinations (separated by ;): "
+                            emailMessage = encrypt_message(emailMessage, cipher)
+                            connectionSocket.send(emailMessage)
+                            email = connectionSocket.recv(2048)
+                            email = decrypt_bytes(email, cipher)
+                            print(email) #dev check
+                            
+                            titleMessage = "Enter title: "
+                            titleMessage = encrypt_message(titleMessage, cipher)
+                            connectionSocket.send(titleMessage)
+                            title = connectionSocket.recv(2048)
+                            title = decrypt_bytes(title, cipher)
+                            print(title) #dev check
+                            
+                            loadQuery = "Would you like to load contents from a file? (Y/N) "
+                            loadQuery = encrypt_message(loadQuery, cipher)
+                            connectionSocket.send(loadQuery)
+                            answer = connectionSocket.recv(2048)
+                            answer = decrypt_bytes(answer, cipher)
+                            print(answer) #dev check
+                            
+                        if userChoice == '2':
+                            print("protocol 2")
+                            message = "Hi"
+                            message = encrypt_message(message, cipher) 
+                            connectionSocket.send(message)
+                            ok = connectionSocket.recv(2048) #confirmation
+                            ok = decrypt_bytes(ok, cipher)
+                            print(ok) #dev check
+                            
+                        if userChoice == '3':
+                            print("protocol 3")
+                            index = "Enter the email you wish to view: "
+                            index = encrypt_message(index, cipher)
+                            connectionSocket.send(index)
+                            index = connectionSocket.recv(2048)
+                            index = decrypt_bytes(index, cipher)
+                            print(index) #dev check
+                            
+                            message = "Hi"
+                            message = encrypt_message(message, cipher) 
+                            connectionSocket.send(message)
+                            
+                            ok = connectionSocket.recv(2048) #confirmation
+                            ok = decrypt_bytes(ok, cipher)
+                            print(ok) #dev check
+                            
+                        if userChoice == '4':
+                            message = "Terminate"
+                            message = encrypt_message(message, cipher)
+                            connectionSocket.send(message)
+                            break
                 #Parent doesn't need this connection
+                print("Terminating connection with {user}.".format(user = userName))
                 connectionSocket.close()
                 return
             
@@ -110,4 +166,38 @@ def server():
             
         
 #-------
+'''
+Function gets the key from the key file, gets and sym key and returns cipher
+'''
+def create_cipher(userName):
+    fName = "./" + userName + "/" + userName + "_public.pem" #Get client public key
+    with open(fName, 'r') as currentClientPublic:
+        currentClientPublicKey = RSA.import_key(currentClientPublic.read())
+        rsa_client = PKCS1_OAEP.new(currentClientPublicKey)
+        sym_key = get_random_bytes(32)  #Generate a random 256 bit symmetric key
+        message = rsa_client.encrypt(pad(sym_key,16)) #Encrypt new key and send to user
+        cipher = AES.new(sym_key, AES.MODE_ECB) #Create AES cipher
+    return message, cipher
+    
+'''
+Function takes a string message,encodes and encrypts it (AES) using the key with ECB mode. Function
+returns the encrypted message.
+'''
+def encrypt_message(message, cipher):
+    m_bytes = cipher.encrypt(pad(message.encode('ascii'),16))
+    return m_bytes
+
+'''
+Function takes an encrypted message in AES mode ECB format, and the key to decrypt the message. 
+Function returns the decrypted message
+'''
+def decrypt_bytes(m_bytes, cipher):
+    
+    #Start of decryption
+    Padded_message = cipher.decrypt(m_bytes)
+    
+    #Remove padding
+    Encodedmessage = unpad(Padded_message,16)
+    Encodedmessage = Encodedmessage.decode('ascii')
+    return Encodedmessage
 server()
