@@ -49,6 +49,7 @@ def client():
         if(reply == "Invalid username or password.\nTerminating.".encode('ascii')): #Check if server vaildated user
             print(reply.decode('ascii')) #User was not vaildated
             clientSocket.close()
+            return
         else: #User was vaildated
             cipher = create_cipher(userName, reply)
             
@@ -70,21 +71,56 @@ def client():
             message = decrypt_bytes(message, cipher)
             if choice == '1':
                 print("Entering Sp1") #dev check
+                #Enter client destinations
                 destination = input(message)
                 destination = encrypt_message(destination, cipher)
                 clientSocket.send(destination)
-                
+                #Title of the email
                 message = clientSocket.recv(2048)
                 message = decrypt_bytes(message, cipher)
-                title = input(message)
+                while(True):
+                    title = input(message)
+                    if(len(title) > 100):
+                        print("Title length is too long, title must be less than 100 characters")
+                    else:
+                        break
                 title = encrypt_message(title, cipher)
                 clientSocket.send(title)
-                
+                #Pick if user wants to load from a file or not
                 message = clientSocket.recv(2048)
                 message = decrypt_bytes(message, cipher)
                 query = input(message)
-                query = encrypt_message(query, cipher)
-                clientSocket.send(query)
+                query = query.upper()
+                sQuery = encrypt_message(query, cipher)
+                clientSocket.send(sQuery)
+                if(query == 'Y'):
+                    #User wants to load contents from a file
+                    message = clientSocket.recv(2048)
+                    message = decrypt_bytes(message, cipher)
+                    while(True):
+                        fileName = input(message)
+                        fileOpen = open(fileName, "r")
+                        fileContents = fileOpen.read()
+                        if(len(fileContents) > 1000000):
+                            print("Message contents too long, message contents must be less than 1000000 characters")
+                        else:
+                            break
+                    sendContents = encrypt_message(fileContents, cipher)
+                    clientSocket.send(sendContents)
+                    
+                elif(query == 'N'):
+                    #User wants to type a message
+                    message = clientSocket.recv(2048)
+                    message = decrypt_bytes(message, cipher)
+                    while(True):
+                        emailMessage = input(message)
+                        if(len(emailMessage) > 1000000):
+                            print("Message contents too long, message contents must be less than 1000000 characters")
+                        else:
+                            break 
+                    sendContents = encrypt_message(emailMessage, cipher)
+                    clientSocket.send(sendContents)
+                #client is finished sending email data
                 
             if choice == '2':
                 print("Entering Sp2") #dev check

@@ -10,6 +10,7 @@ import socket
 import sys
 import os
 import json
+import datetime
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.Util.Padding import pad, unpad
@@ -44,7 +45,6 @@ def server():
             connectionSocket, addr = serverSocket.accept()
             #print(addr,'   ',connectionSocket)
             pid = os.fork()
-            
             # If it is a client process
             if  pid== 0:
                 
@@ -80,7 +80,7 @@ def server():
                         print("The received client information: " + userName + " is invalid (ConnectionTerminated).")
                         break
                 else: #Username did not match
-                    message = "Invalid username or password.\nTerminating".encode('ascii')
+                    message = "Invalid username or password.\nTerminating.".encode('ascii')
                     print("The received client information: " + userName + " is invalid (ConnectionTerminated).")
                     connectionSocket.send(message)
                     break
@@ -104,21 +104,53 @@ def server():
                             connectionSocket.send(emailMessage)
                             email = connectionSocket.recv(2048)
                             email = decrypt_bytes(email, cipher)
-                            print(email) #dev check
                             
                             titleMessage = "Enter title: "
                             titleMessage = encrypt_message(titleMessage, cipher)
                             connectionSocket.send(titleMessage)
                             title = connectionSocket.recv(2048)
                             title = decrypt_bytes(title, cipher)
-                            print(title) #dev check
+                            
                             
                             loadQuery = "Would you like to load contents from a file? (Y/N) "
                             loadQuery = encrypt_message(loadQuery, cipher)
                             connectionSocket.send(loadQuery)
                             answer = connectionSocket.recv(2048)
                             answer = decrypt_bytes(answer, cipher)
-                            print(answer) #dev check
+                            if(answer == 'Y'):
+                                #User wants to load contents from a file
+                                ContentMessage = "Enter filename: "
+                                ContentMessage = encrypt_message(ContentMessage, cipher)
+                                connectionSocket.send(ContentMessage)
+                            elif(answer == 'N'):
+                                #User wants to type a message
+                                ContentMessage = "Enter message contents: "
+                                ContentMessage = encrypt_message(ContentMessage, cipher)
+                                connectionSocket.send(ContentMessage)
+                            
+                            messageContents = connectionSocket.recv(2048)
+                            messageContents = decrypt_bytes(messageContents, cipher)
+                            #Get date and time
+                            currentTime = str(datetime.datetime.now())
+                            print(email)
+                            print(title)
+                            print(currentTime)
+                            print(answer)
+                            print(messageContents)
+                            
+                            #Now server will save the email data to a file
+                            rClients = email.split(';')
+                            for client in rClients:
+                                path = "./" + client + "/" + userName + "_" + title + ".txt"
+                                newEmail = open(path, 'w')
+                                newEmail.write("From: " + userName + "\n")
+                                newEmail.write("To: " + email + "\n")
+                                newEmail.write("Time and Date: " + currentTime + "\n")
+                                newEmail.write("Content Length: " + str(len(messageContents)) + "\n")
+                                newEmail.write("Content:\n")
+                                newEmail.write(messageContents)
+                                newEmail.close
+                                
                             
                         if userChoice == '2':
                             print("protocol 2")
