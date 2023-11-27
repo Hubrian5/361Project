@@ -85,11 +85,11 @@ def server():
                     connectionSocket.send(message)
                     break
                 
-                confirm = connectionSocket.recv(2048)
-                confirm = cipher.decrypt(confirm)
-                confirm = unpad(confirm, 16)
-                confirm = confirm.decode('ascii')
-                if(confirm == "OK"):
+                confrim = connectionSocket.recv(2048)
+                confrim = cipher.decrypt(confrim)
+                confrim = unpad(confrim, 16)
+                confrim = confrim.decode('ascii')
+                if(confrim == "OK"):
                     userChoice = '0'
                     while userChoice != '4':
                         menu = "Select the operation:\n\t1) Create and send an email\n\t2) Display the inbox list\n\t3) Display the email contents\n\t4) Terminate the connection\n"
