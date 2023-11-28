@@ -9,6 +9,7 @@ Date: November 24, 2023
 import socket
 import sys
 import os
+import glob
 import json
 import datetime
 from Crypto.PublicKey import RSA
@@ -18,7 +19,7 @@ from Crypto.Random import get_random_bytes
 
 def server():
     #Server port
-    serverPort = 17000
+    serverPort = 13000
     
     #Create server socket that uses IPv4 and TCP protocols 
     try:
@@ -68,8 +69,8 @@ def server():
                 password = rsa_server.decrypt(password)
                 password = unpad(password,16)  
                 password = password.decode('ascii')
-                if(userName in realUserName): #Check if user name vaild
-                    if(realUsersPasswords[userName] == password): #If user name is vaild check password
+                if(userName in realUserName): #Check if user name valid
+                    if(realUsersPasswords[userName] == password): #If user name is valid check password
                         print("Connection Accepted and Symmetric Key Generated for client: " + userName) #Password and user name match
                         message, cipher = create_cipher(userName)
                         #print(cipher, message) dev check
@@ -85,11 +86,12 @@ def server():
                     connectionSocket.send(message)
                     break
                 
-                confrim = connectionSocket.recv(2048)
-                confrim = cipher.decrypt(confrim)
-                confrim = unpad(confrim, 16)
-                confrim = confrim.decode('ascii')
-                if(confrim == "OK"):
+                # Receive OK from client
+                confirm = connectionSocket.recv(2048)
+                confirm = cipher.decrypt(confirm)
+                confirm = unpad(confirm, 16)
+                confirm = confirm.decode('ascii')
+                if(confirm == "OK"):
                     userChoice = '0'
                     while userChoice != '4':
                         menu = "Select the operation:\n\t1) Create and send an email\n\t2) Display the inbox list\n\t3) Display the email contents\n\t4) Terminate the connection\n"
@@ -146,6 +148,7 @@ def server():
                                 newEmail.write("From: " + userName + "\n")
                                 newEmail.write("To: " + email + "\n")
                                 newEmail.write("Time and Date: " + currentTime + "\n")
+                                newEmail.write("Title: " + title + "\n")
                                 newEmail.write("Content Length: " + str(len(messageContents)) + "\n")
                                 newEmail.write("Content:\n")
                                 newEmail.write(messageContents)
@@ -153,10 +156,59 @@ def server():
                                 
                             
                         if userChoice == '2':
-                            print("protocol 2")
-                            message = "Hi"
-                            message = encrypt_message(message, cipher) 
-                            connectionSocket.send(message)
+                            print("Retrieving Inbox Info")
+                            emails_info = []
+
+                            try:
+                                # Retrieve all the files in the respective clients folder
+                                email_files = glob.glob(f"./{userName}/*.txt")
+                                #print(email_files)
+                                
+                                # Extract email information
+                                #emails_info = []
+                                for index, file_path in enumerate(email_files, start=1):
+                                    with open(file_path, 'r') as email_content:
+                                        lines = email_content.readlines()
+                                        if len(lines) >= 4:
+                                            from_client = lines[0][6:].strip()  # Extract 'From: clientX'
+                                            date_time = lines[2][15:].strip()  # Extract 'Time and Date: YYYY-MM-DD HH:MM:SS...'
+                                            title = lines[3][7:].strip()[:100]  # Extract 'Title: ...' with max length of 100
+                                            emails_info.append((index, from_client, date_time, title))
+                                #print(emails_info)
+                                
+                                # Sort emails_info by date and time (assuming the third element is the date and time string)
+                                emails_info.sort(key=lambda x: x[2])
+                                
+                                # Determine maximum lengths of columns
+                                max_lengths = [len(col) for col in ["Index", "From", "DateTime", "Title"]]
+                                for info in emails_info:
+                                    for i, length in enumerate(max_lengths):
+                                        max_lengths[i] = max(max_lengths[i], len(str(info[i])))
+                                
+                                # Prepare the inbox information message with left-aligned columns
+                                column_names = ["Index", "From", "DateTime", "Title"]
+                                column_template = ' '.join([f'{{:<{length}}}' for length in max_lengths])
+                                inbox_message = column_template.format(*column_names) + '\n'
+                                
+                                if not emails_info:
+                                    empty_inbox_message = "Inbox is empty"
+                                    encrypted_empty_inbox_message = encrypt_message(empty_inbox_message, cipher)
+                                    connectionSocket.send(encrypted_empty_inbox_message)
+
+                                for info in emails_info:
+                                    inbox_message += column_template.format(*map(str, info)) + '\n'
+                                #print(inbox_message)
+                                
+                                # Encrypt and send the inbox information message to the client
+                                encrypted_inbox_message = encrypt_message(inbox_message, cipher)
+                                connectionSocket.send(encrypted_inbox_message)
+                                #print(encrypted_inbox_message)
+                                #print("Inbox information sent.")
+                                
+                            except FileNotFoundError:
+                                print(f"No inbox information found for {userName}")
+
+                            # Waiting for confirmation from the client
                             ok = connectionSocket.recv(2048) #confirmation
                             ok = decrypt_bytes(ok, cipher)
                             print(ok) #dev check

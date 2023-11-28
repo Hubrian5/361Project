@@ -17,7 +17,7 @@ from Crypto.Util.Padding import pad, unpad
 def client():
     # Server Information
     serverName = input("Enter the server IP or name: ")
-    serverPort = 17000
+    serverPort = 13000
     
     #Create client socket that useing IPv4 and TCP protocols 
     try:
@@ -44,18 +44,18 @@ def client():
         message = rsa_server.encrypt(pad(message,16)) #encrypt user input and send to server
         clientSocket.send(message)
         
-        #Get server response for vaildating user info
+        #Get server response for validating user info
         reply = clientSocket.recv(2048)
-        if(reply == "Invalid username or password.\nTerminating.".encode('ascii')): #Check if server vaildated user
-            print(reply.decode('ascii')) #User was not vaildated
+        if(reply == "Invalid username or password.\nTerminating.".encode('ascii')): #Check if server validated user
+            print(reply.decode('ascii')) #User was not validated
             clientSocket.close()
             return
-        else: #User was vaildated
+        else: #User was validated
             cipher = create_cipher(userName, reply)
             
-        #Send confrim message to server stating that we have recived the symmetric key
-        confrim = cipher.encrypt(pad("OK".encode('ascii'),16))
-        clientSocket.send(confrim)
+        #Send confirm message to server stating that we have recived the symmetric key
+        confirm = cipher.encrypt(pad("OK".encode('ascii'),16))
+        clientSocket.send(confirm)
         choice = '0'
         while choice != '4':
             menu = clientSocket.recv(2048)
@@ -123,8 +123,12 @@ def client():
                 #client is finished sending email data
                 
             if choice == '2':
-                print("Entering Sp2") #dev check
+                print("Requesting Inbox Info")  # dev check
+
+                # Receive the inbox message from the server. Prints only columns if empty inbox
                 print(message)
+
+                # Sending OK to the server
                 ok = "OK"
                 ok = encrypt_message(ok, cipher)
                 clientSocket.send(ok)
