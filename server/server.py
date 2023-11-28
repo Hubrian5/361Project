@@ -1,6 +1,6 @@
 '''
 server.py
-Author(s): 
+Author(s): Brian Hu, Haris Kajtazovic, Mitch Duriez
 Course: CMPT361-X01L
 Instructor: Mohammed Elmorsy
 Project
@@ -100,7 +100,6 @@ def server():
                         userChoice = connectionSocket.recv(2048)
                         userChoice = decrypt_bytes(userChoice, cipher)
                         if userChoice == '1':
-                            print("protocol 1")
                             emailMessage = "Enter destinations (separated by ;): "
                             emailMessage = encrypt_message(emailMessage, cipher)
                             connectionSocket.send(emailMessage)
@@ -119,6 +118,7 @@ def server():
                             connectionSocket.send(loadQuery)
                             answer = connectionSocket.recv(2048)
                             answer = decrypt_bytes(answer, cipher)
+                            answer = answer.upper()
                             if(answer == 'Y'):
                                 #User wants to load contents from a file
                                 ContentMessage = "Enter filename: "
@@ -134,38 +134,34 @@ def server():
                             messageContents = decrypt_bytes(messageContents, cipher)
                             #Get date and time
                             currentTime = str(datetime.datetime.now())
-                            print(email)
-                            print(title)
-                            print(currentTime)
-                            print(answer)
-                            print(messageContents)
                             
                             #Now server will save the email data to a file
                             rClients = email.split(';')
                             for client in rClients:
-                                path = "./" + client + "/" + userName + "_" + title + ".txt"
-                                newEmail = open(path, 'w')
-                                newEmail.write("From: " + userName + "\n")
-                                newEmail.write("To: " + email + "\n")
-                                newEmail.write("Time and Date: " + currentTime + "\n")
-                                newEmail.write("Title: " + title + "\n")
-                                newEmail.write("Content Length: " + str(len(messageContents)) + "\n")
-                                newEmail.write("Content:\n")
-                                newEmail.write(messageContents)
-                                newEmail.close
+                                pathTitle = title.replace(" ", "_")
+                                if(client in realUserName):
+                                    path = "./" + client + "/" + userName + "_" + pathTitle + ".txt"
+                                    newEmail = open(path, 'w')
+                                    newEmail.write("From: " + userName + "\n")
+                                    newEmail.write("To: " + email + "\n")
+                                    newEmail.write("Time and Date: " + currentTime + "\n")
+                                    newEmail.write("Title: " + title + "\n")
+                                    newEmail.write("Content Length: " + str(len(messageContents)) + "\n")
+                                    newEmail.write("Content:\n")
+                                    newEmail.write(messageContents)
+                                    newEmail.close()
+                            print("An email from " + userName + " is sent to " + email + " has a content length of " + str(len(messageContents)) + " .")
+                                    
                                 
                             
                         if userChoice == '2':
-                            print("Retrieving Inbox Info")
                             emails_info = []
 
                             try:
                                 # Retrieve all the files in the respective clients folder
                                 email_files = glob.glob(f"./{userName}/*.txt")
                                 #print(email_files)
-                                
                                 # Extract email information
-                                #emails_info = []
                                 for index, file_path in enumerate(email_files, start=1):
                                     with open(file_path, 'r') as email_content:
                                         lines = email_content.readlines()
@@ -173,12 +169,12 @@ def server():
                                             from_client = lines[0][6:].strip()  # Extract 'From: clientX'
                                             date_time = lines[2][15:].strip()  # Extract 'Time and Date: YYYY-MM-DD HH:MM:SS...'
                                             title = lines[3][7:].strip()[:100]  # Extract 'Title: ...' with max length of 100
-                                            emails_info.append((index, from_client, date_time, title))
-                                #print(emails_info)
-                                
-                                # Sort emails_info by date and time (assuming the third element is the date and time string)
+                                            emails_info.append([index, from_client, date_time, title])
+                                # Sort emails_info by date and time (assuming the third element is the date and time string) 
                                 emails_info.sort(key=lambda x: x[2])
-                                
+                                for i in range(0,len(emails_info)):
+                                    emails_info[i][0] = i+1
+                                #print("AFTERMATH\n" + emails_info)
                                 # Determine maximum lengths of columns
                                 max_lengths = [len(col) for col in ["Index", "From", "DateTime", "Title"]]
                                 for info in emails_info:
@@ -194,14 +190,14 @@ def server():
                                     empty_inbox_message = "Inbox is empty"
                                     encrypted_empty_inbox_message = encrypt_message(empty_inbox_message, cipher)
                                     connectionSocket.send(encrypted_empty_inbox_message)
-
-                                for info in emails_info:
-                                    inbox_message += column_template.format(*map(str, info)) + '\n'
-                                #print(inbox_message)
-                                
-                                # Encrypt and send the inbox information message to the client
-                                encrypted_inbox_message = encrypt_message(inbox_message, cipher)
-                                connectionSocket.send(encrypted_inbox_message)
+                                else:
+                                    for info in emails_info:
+                                        inbox_message += column_template.format(*map(str, info)) + '\n'
+                                    #print(inbox_message)
+                                    
+                                    # Encrypt and send the inbox information message to the client
+                                    encrypted_inbox_message = encrypt_message(inbox_message, cipher)
+                                    connectionSocket.send(encrypted_inbox_message)
                                 #print(encrypted_inbox_message)
                                 #print("Inbox information sent.")
                                 
@@ -211,7 +207,7 @@ def server():
                             # Waiting for confirmation from the client
                             ok = connectionSocket.recv(2048) #confirmation
                             ok = decrypt_bytes(ok, cipher)
-                            print(ok) #dev check
+                            #print(ok) #dev check
                             
                         if userChoice == '3':
                             print("protocol 3")
