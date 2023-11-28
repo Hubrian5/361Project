@@ -1,6 +1,6 @@
 '''
 client.py
-Author(s): 
+Author(s): Brian Hu, Haris Kajtazovic, Mitch Duriez
 Course: CMPT361-X01L
 Instructor: Mohammed Elmorsy
 Project
@@ -73,6 +73,11 @@ def client():
                 print("Entering Sp1") #dev check
                 #Enter client destinations
                 destination = input(message)
+                while(True):
+                    if(len(destination) == 0):
+                        print("Why would you send an email to no one?")
+                    else:
+                        break
                 destination = encrypt_message(destination, cipher)
                 clientSocket.send(destination)
                 #Title of the email
@@ -81,7 +86,9 @@ def client():
                 while(True):
                     title = input(message)
                     if(len(title) > 100):
-                        print("Title length is too long, title must be less than 100 characters")
+                        print("Title length is too long, title must be less than 100 characters.")
+                    elif(len(title) == 0):
+                        print("Your title cannot be empty. Please enter a new title.")
                     else:
                         break
                 title = encrypt_message(title, cipher)
@@ -103,7 +110,8 @@ def client():
                         fileContents = fileOpen.read()
                         if(len(fileContents) > 1000000):
                             print("Message contents too long, message contents must be less than 1000000 characters")
-                        else:
+                        elif(len(fileContents) == 0):
+                            print("Why would you send an email with nothing?")
                             break
                     sendContents = encrypt_message(fileContents, cipher)
                     clientSocket.send(sendContents)
@@ -116,6 +124,8 @@ def client():
                         emailMessage = input(message)
                         if(len(emailMessage) > 1000000):
                             print("Message contents too long, message contents must be less than 1000000 characters")
+                        elif(len(emailMessage) == 0):
+                            print("Why would you send an email with nothing?")
                         else:
                             break 
                     sendContents = encrypt_message(emailMessage, cipher)
