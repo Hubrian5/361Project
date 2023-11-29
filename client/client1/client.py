@@ -72,8 +72,8 @@ def client():
             if choice == '1':
                 print("Entering Sp1") #dev check
                 #Enter client destinations
-                destination = input(message)
                 while(True):
+                    destination = input(message)
                     if(len(destination) == 0):
                         print("Why would you send an email to no one?")
                     else:
