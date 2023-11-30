@@ -17,7 +17,7 @@ from Crypto.Util.Padding import pad, unpad
 def client():
     # Server Information
     serverName = input("Enter the server IP or name: ")
-    serverPort = 13000
+    serverPort = 17000
     
     #Create client socket that useing IPv4 and TCP protocols 
     try:
@@ -108,6 +108,7 @@ def client():
                         fileName = input(message)
                         fileOpen = open(fileName, "r")
                         fileContents = fileOpen.read()
+                        fileOpen.close()
                         if(len(fileContents) > 1000000):
                             print("Message contents too long, message contents must be less than 1000000 characters")
                         elif(len(fileContents) == 0):
@@ -153,9 +154,10 @@ def client():
                 email = decrypt_bytes(email, cipher)
                 print(email)
                 
+                # Sending OK to the server
                 ok = "OK"
                 ok = encrypt_message(ok, cipher)
-                clientSocket.send(ok)
+                clientSocket.send(ok) 
                
         # Client terminate connection with the server
         print("The connection is terminated with the server.")
