@@ -17,7 +17,7 @@ from Crypto.Util.Padding import pad, unpad
 def client():
     # Server Information
     serverName = input("Enter the server IP or name: ")
-    serverPort = 17000
+    serverPort = 13000
     
     #Create client socket that useing IPv4 and TCP protocols 
     try:
