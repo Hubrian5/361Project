@@ -19,7 +19,7 @@ from Crypto.Random import get_random_bytes
 
 def server():
     #Server port
-    serverPort = 13000
+    serverPort = 17000
     
     #Create server socket that uses IPv4 and TCP protocols 
     try:
@@ -158,20 +158,8 @@ def server():
                             emails_info = []
 
                             try:
-                                # Retrieve all the files in the respective clients folder
-                                email_files = glob.glob(f"./{userName}/*.txt")
-                                #print(email_files)
-                                # Extract email information
-                                for index, file_path in enumerate(email_files, start=1):
-                                    with open(file_path, 'r') as email_content:
-                                        lines = email_content.readlines()
-                                        if len(lines) >= 4:
-                                            from_client = lines[0][6:].strip()  # Extract 'From: clientX'
-                                            date_time = lines[2][15:].strip()  # Extract 'Time and Date: YYYY-MM-DD HH:MM:SS...'
-                                            title = lines[3][7:].strip()[:100]  # Extract 'Title: ...' with max length of 100
-                                            emails_info.append([index, from_client, date_time, title])
-                                # Sort emails_info by date and time (assuming the third element is the date and time string) 
-                                emails_info.sort(key=lambda x: x[2])
+                                emails_info = get_files(userName)
+                                print(emails_info)
                                 for i in range(0,len(emails_info)):
                                     emails_info[i][0] = i+1
                                 #print("AFTERMATH\n" + emails_info)
@@ -216,16 +204,25 @@ def server():
                             connectionSocket.send(index)
                             index = connectionSocket.recv(2048)
                             index = decrypt_bytes(index, cipher)
-                            print(index) #dev check
+                            index = int(index) - 1 
+                            #print(index) #dev check
+                            emails_info = get_files(userName)
                             
-                            message = "Hi"
-                            message = encrypt_message(message, cipher) 
-                            connectionSocket.send(message)
-                            
+                            if len(emails_info) != 0 and index < len(emails_info): #Error check
+                                email = emails_info[index]
+                                email_message = read_file(email[1], email[3], userName)
+                                email_message = encrypt_message(email_message, cipher)
+                                connectionSocket.send(email_message)
+                                
+                            else:
+                                message = "Inbox empty or file not found"
+                                message = encrypt_message(message, cipher)
+                                connectionSocket.send(message)
+                                
+                            # Waiting for confirmation from the client
                             ok = connectionSocket.recv(2048) #confirmation
                             ok = decrypt_bytes(ok, cipher)
-                            print(ok) #dev check
-                            
+                            #print(ok) #dev check
                         if userChoice == '4':
                             message = "Terminate"
                             message = encrypt_message(message, cipher)
@@ -280,4 +277,40 @@ def decrypt_bytes(m_bytes, cipher):
     Encodedmessage = unpad(Padded_message,16)
     Encodedmessage = Encodedmessage.decode('ascii')
     return Encodedmessage
+'''
+Function globs all files from client folders, goes over the files and creates a list of the inbox.
+Function sorts and returns the list
+'''
+def get_files(userName):
+    # Retrieve all the files in the respective clients folder
+    email_files = glob.glob(f"./{userName}/*.txt")
+    #print(email_files)                           
+    
+    # Extract email information
+    emails_info = []
+    for index, file_path in enumerate(email_files, start=1):
+        with open(file_path, 'r') as email_content:
+            lines = email_content.readlines()
+            if len(lines) >= 4:
+                from_client = lines[0][6:].strip()  # Extract 'From: clientX'
+                date_time = lines[2][15:].strip()  # Extract 'Time and Date: YYYY-MM-DD HH:MM:SS...'
+                title = lines[3][7:].strip()[:100]  # Extract 'Title: ...' with max length of 100
+                emails_info.append([index, from_client, date_time, title])
+    #print(emails_info)
+                                
+    # Sort emails_info by date and time (assuming the third element is the date and time string)
+    emails_info.sort(key=lambda x: x[2])
+    return emails_info
+
+'''
+
+'''
+def read_file(sender, title, userName):
+    fPath = ("./{user}/" + sender + "_" + title + ".txt").format(user = userName)
+    #print(fPath) #Dev check
+    string = ""
+    with open(fPath, 'r') as f:
+        string +=  f.read()
+    #print(string) #Dev check
+    return string
 server()
