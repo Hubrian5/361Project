@@ -1,6 +1,6 @@
 '''
 client.py
-Author(s): 
+Author(s): Brian Hu, Haris Kajtazovic, Mitch Duriez
 Course: CMPT361-X01L
 Instructor: Mohammed Elmorsy
 Project
@@ -17,7 +17,7 @@ from Crypto.Util.Padding import pad, unpad
 def client():
     # Server Information
     serverName = input("Enter the server IP or name: ")
-    serverPort = 17000
+    serverPort = 13000
     
     #Create client socket that useing IPv4 and TCP protocols 
     try:
@@ -44,17 +44,18 @@ def client():
         message = rsa_server.encrypt(pad(message,16)) #encrypt user input and send to server
         clientSocket.send(message)
         
-        #Get server response for vaildating user info
+        #Get server response for validating user info
         reply = clientSocket.recv(2048)
-        if(reply == "Invalid username or password.\nTerminating.".encode('ascii')): #Check if server vaildated user
-            print(reply.decode('ascii')) #User was not vaildated
+        if(reply == "Invalid username or password.\nTerminating.".encode('ascii')): #Check if server validated user
+            print(reply.decode('ascii')) #User was not validated
             clientSocket.close()
-        else: #User was vaildated
+            return
+        else: #User was validated
             cipher = create_cipher(userName, reply)
             
-        #Send confrim message to server stating that we have recived the symmetric key
-        confrim = cipher.encrypt(pad("OK".encode('ascii'),16))
-        clientSocket.send(confrim)
+        #Send confirm message to server stating that we have recived the symmetric key
+        confirm = cipher.encrypt(pad("OK".encode('ascii'),16))
+        clientSocket.send(confirm)
         choice = '0'
         while choice != '4':
             menu = clientSocket.recv(2048)
@@ -70,25 +71,74 @@ def client():
             message = decrypt_bytes(message, cipher)
             if choice == '1':
                 print("Entering Sp1") #dev check
-                destination = input(message)
+                #Enter client destinations
+                while(True):
+                    destination = input(message)
+                    if(len(destination) == 0):
+                        print("Why would you send an email to no one?")
+                    else:
+                        break
                 destination = encrypt_message(destination, cipher)
                 clientSocket.send(destination)
-                
+                #Title of the email
                 message = clientSocket.recv(2048)
                 message = decrypt_bytes(message, cipher)
-                title = input(message)
+                while(True):
+                    title = input(message)
+                    if(len(title) > 100):
+                        print("Title length is too long, title must be less than 100 characters.")
+                    elif(len(title) == 0):
+                        print("Your title cannot be empty. Please enter a new title.")
+                    else:
+                        break
                 title = encrypt_message(title, cipher)
                 clientSocket.send(title)
-                
+                #Pick if user wants to load from a file or not
                 message = clientSocket.recv(2048)
                 message = decrypt_bytes(message, cipher)
                 query = input(message)
-                query = encrypt_message(query, cipher)
-                clientSocket.send(query)
+                query = query.upper()
+                sQuery = encrypt_message(query, cipher)
+                clientSocket.send(sQuery)
+                if(query == 'Y'):
+                    #User wants to load contents from a file
+                    message = clientSocket.recv(2048)
+                    message = decrypt_bytes(message, cipher)
+                    while(True):
+                        fileName = input(message)
+                        fileOpen = open(fileName, "r")
+                        fileContents = fileOpen.read()
+                        if(len(fileContents) > 1000000):
+                            print("Message contents too long, message contents must be less than 1000000 characters")
+                        elif(len(fileContents) == 0):
+                            print("Why would you send an email with nothing?")
+                            break
+                    sendContents = encrypt_message(fileContents, cipher)
+                    clientSocket.send(sendContents)
+                    
+                elif(query == 'N'):
+                    #User wants to type a message
+                    message = clientSocket.recv(2048)
+                    message = decrypt_bytes(message, cipher)
+                    while(True):
+                        emailMessage = input(message)
+                        if(len(emailMessage) > 1000000):
+                            print("Message contents too long, message contents must be less than 1000000 characters")
+                        elif(len(emailMessage) == 0):
+                            print("Why would you send an email with nothing?")
+                        else:
+                            break 
+                    sendContents = encrypt_message(emailMessage, cipher)
+                    clientSocket.send(sendContents)
+                #client is finished sending email data
                 
             if choice == '2':
-                print("Entering Sp2") #dev check
+                print("Requesting Inbox Info")  # dev check
+
+                # Receive the inbox message from the server. Prints only columns if empty inbox
                 print(message)
+
+                # Sending OK to the server
                 ok = "OK"
                 ok = encrypt_message(ok, cipher)
                 clientSocket.send(ok)
