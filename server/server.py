@@ -19,7 +19,7 @@ from Crypto.Random import get_random_bytes
 
 def server():
     #Server port
-    serverPort = 17000
+    serverPort = 13000
     
     #Create server socket that uses IPv4 and TCP protocols 
     try:
