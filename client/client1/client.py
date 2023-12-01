@@ -9,6 +9,7 @@ Date: November 24, 2023
 import socket
 import sys
 import json
+import os
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.Util.Padding import pad, unpad
@@ -107,15 +108,23 @@ def client():
                     while(True):
                         fileName = input(message)
                         fileOpen = open(fileName, "r")
-                        fileContents = fileOpen.read()
+                        fileContents = fileOpen.read(-1) #Open file in read mode to check content lenght
                         fileOpen.close()
                         if(len(fileContents) > 1000000):
                             print("Message contents too long, message contents must be less than 1000000 characters")
                         elif(len(fileContents) == 0):
                             print("Why would you send an email with nothing?")
+                        else:
                             break
-                    sendContents = encrypt_message(fileContents, cipher)
-                    clientSocket.send(sendContents)
+                    
+                    fileSize = str(os.stat(fileName).st_size)
+                    fileSizeSend = encrypt_message(fileSize, cipher)
+                    clientSocket.send(fileSizeSend)
+                    fileOpen = open(fileName, "rb") #Open file in read bytes mode to send full file
+                    fileContents = fileOpen.read(int(fileSize))
+                    fileOpen.close()
+                    sendContents = cipher.encrypt(pad(fileContents,16))
+                    clientSocket.sendall(sendContents)
                     
                 elif(query == 'N'):
                     #User wants to type a message
@@ -129,8 +138,11 @@ def client():
                             print("Why would you send an email with nothing?")
                         else:
                             break 
+                    emailSize = str(len(emailMessage))
+                    emailSize = encrypt_message(emailSize, cipher)
+                    clientSocket.send(emailSize)
                     sendContents = encrypt_message(emailMessage, cipher)
-                    clientSocket.send(sendContents)
+                    clientSocket.sendall(sendContents)
                 #client is finished sending email data
                 
             if choice == '2':
@@ -149,7 +161,6 @@ def client():
                 index = input(message)
                 index = encrypt_message(index, cipher)
                 clientSocket.send(index)
-                
                 email = clientSocket.recv(2048)
                 email = decrypt_bytes(email, cipher)
                 print(email)
@@ -200,9 +211,12 @@ def decrypt_bytes(m_bytes, cipher):
     #Start of decryption
     Padded_message = cipher.decrypt(m_bytes)
     
-    #Remove padding
-    Encodedmessage = unpad(Padded_message,16)
-    Encodedmessage = Encodedmessage.decode('ascii')
+    if(len(Padded_message) != 2048):
+        #Remove padding
+        Encodedmessage = unpad(Padded_message,16)
+        Encodedmessage = Encodedmessage.decode('ascii')
+    else:
+        Encodedmessage = Padded_message.decode('ascii')
     return Encodedmessage
     
 client()

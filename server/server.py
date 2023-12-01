@@ -129,9 +129,15 @@ def server():
                                 ContentMessage = "Enter message contents: "
                                 ContentMessage = encrypt_message(ContentMessage, cipher)
                                 connectionSocket.send(ContentMessage)
-                            
-                            messageContents = connectionSocket.recv(2048)
-                            messageContents = decrypt_bytes(messageContents, cipher)
+                            fileSize = connectionSocket.recv(2048)
+                            fileSize = decrypt_bytes(fileSize,cipher)
+                            bytes_read = 0
+                            messageContents = ""
+                            while(bytes_read < int(fileSize)): ##get full content length
+                                bytesRecv = connectionSocket.recv(2048)
+                                bytesRecv = decrypt_bytes(bytesRecv, cipher)
+                                messageContents += bytesRecv #Store converted message bytes into readable text
+                                bytes_read += len(bytesRecv.encode('ascii'))
                             #Get date and time
                             currentTime = str(datetime.datetime.now())
                             
@@ -273,9 +279,13 @@ def decrypt_bytes(m_bytes, cipher):
     #Start of decryption
     Padded_message = cipher.decrypt(m_bytes)
     
-    #Remove padding
-    Encodedmessage = unpad(Padded_message,16)
-    Encodedmessage = Encodedmessage.decode('ascii')
+    if(len(Padded_message) != 2048):
+        #Remove padding
+        Encodedmessage = unpad(Padded_message,16)
+        Encodedmessage = Encodedmessage.decode('ascii')
+    else:
+        Encodedmessage = Padded_message.decode('ascii')
+    
     return Encodedmessage
 '''
 Function globs all files from client folders, goes over the files and creates a list of the inbox.
