@@ -133,7 +133,7 @@ def server():
                             fileSize = decrypt_bytes(fileSize,cipher)
                             bytes_read = 0
                             messageContents = ""
-                            while(bytes_read < int(fileSize)): ##get full content length
+                            while(bytes_read < int(fileSize)): #get full content length
                                 bytesRecv = connectionSocket.recv(2048)
                                 bytesRecv = decrypt_bytes(bytesRecv, cipher)
                                 messageContents += bytesRecv #Store converted message bytes into readable text
@@ -204,7 +204,7 @@ def server():
                             #print(ok) #dev check
                             
                         if userChoice == '3':
-                            print("protocol 3")
+                            #get index from user
                             index = "Enter the email you wish to view: "
                             index = encrypt_message(index, cipher)
                             connectionSocket.send(index)
@@ -212,13 +212,22 @@ def server():
                             index = decrypt_bytes(index, cipher)
                             index = int(index) - 1 
                             #print(index) #dev check
+                            
                             emails_info = get_files(userName)
                             
                             if len(emails_info) != 0 and index < len(emails_info): #Error check
                                 email = emails_info[index]
-                                email_message = read_file(email[1], email[3], userName)
-                                email_message = encrypt_message(email_message, cipher)
-                                connectionSocket.send(email_message)
+                                email_message, size = read_file(email[1], email[3], userName)
+                                fileSize = encrypt_message(size, cipher)
+                                connectionSocket.send(fileSize)
+                                
+                                # Waiting for confirmation from the client
+                                ok = connectionSocket.recv(2048) #confirmation
+                                ok = decrypt_bytes(ok, cipher)
+                                #print(ok) #dev check
+                                
+                                email_message = cipher.encrypt(pad(email_message, 16))
+                                connectionSocket.sendall(email_message)
                                 
                             else:
                                 message = "Inbox empty or file not found"
@@ -318,9 +327,9 @@ def get_files(userName):
 def read_file(sender, title, userName):
     fPath = ("./{user}/" + sender + "_" + title + ".txt").format(user = userName)
     #print(fPath) #Dev check
-    string = ""
-    with open(fPath, 'r') as f:
-        string +=  f.read()
-    #print(string) #Dev check
-    return string
+    fileSize = str(os.stat(fPath).st_size)
+    content = b""
+    with open(fPath, "rb") as f:
+        content +=  f.read(int(fileSize))
+    return content, fileSize
 server()
