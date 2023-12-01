@@ -157,15 +157,27 @@ def client():
                 clientSocket.send(ok)
                 
             if choice == '3':
-                print("Entering Sp3") #dev check
                 index = input(message)
                 index = encrypt_message(index, cipher)
                 clientSocket.send(index)
-                email = clientSocket.recv(2048)
-                email = decrypt_bytes(email, cipher)
-                print(email)
+                fileSize = clientSocket.recv(2048)
+                fileSize = decrypt_bytes(fileSize, cipher)
                 
-                # Sending OK to the server
+                # Sending OK to the server (needs in order to continue)
+                ok = "OK"
+                ok = encrypt_message(ok, cipher)
+                clientSocket.send(ok) 
+                
+                bytes_read = 0
+                contents = ""
+                while(bytes_read < int(fileSize)): #get full content length
+                    bytesRecv = clientSocket.recv(2048)
+                    bytesRecv = decrypt_bytes(bytesRecv, cipher)
+                    contents += bytesRecv #Store converted message bytes into readable text
+                    bytes_read += len(bytesRecv.encode('ascii'))
+                print(contents)
+                
+                # Sending OK to the server (needs in order to continue)
                 ok = "OK"
                 ok = encrypt_message(ok, cipher)
                 clientSocket.send(ok) 
