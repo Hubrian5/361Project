@@ -68,8 +68,9 @@ def client():
             choice = userChoice #choice taken from user input
             sendUserChoice = cipher.encrypt(pad(userChoice.encode('ascii'),16))
             clientSocket.send(sendUserChoice)
-            message = clientSocket.recv(2048)
-            message = decrypt_bytes(message, cipher)
+            if(choice in ["1","2","3","4"]):
+                message = clientSocket.recv(2048)
+                message = decrypt_bytes(message, cipher)
             if choice == '1':
                 print("Entering Sp1") #dev check
                 #Enter client destinations
@@ -105,19 +106,24 @@ def client():
                     #User wants to load contents from a file
                     message = clientSocket.recv(2048)
                     message = decrypt_bytes(message, cipher)
-                    while(True):
-                        fileName = input(message)
-                        fileOpen = open(fileName, "r")
-                        fileContents = fileOpen.read(-1) #Open file in read mode to check content lenght
-                        fileOpen.close()
-                        if(len(fileContents) > 1000000):
-                            print("Message contents too long, message contents must be less than 1000000 characters")
-                            fileName = ""
-                        elif(len(fileContents) == 0):
-                            print("Why would you send an email with nothing?")
-                            fileName = ""
-                        else:
-                            break
+                    fileName = input(message)
+                    fileOpen = open(fileName, "r")
+                    fileContents = fileOpen.read(-1) #Open file in read mode to check content lenght
+                    fileOpen.close()
+                    if(len(fileContents) > 1000000):
+                        print("Message contents too long, message contents must be less than 1000000 characters")
+                        message = "Please make changes to your file and resumbit."
+                        print(message)
+                        message = encrypt_message(message, cipher)
+                        clientSocket.send(message)
+                        continue #invalid content
+                    elif(len(fileContents) == 0):
+                        print("Why would you send an email with nothing?")
+                        message = "Please make changes to your file and resumbit."
+                        print(message)
+                        message = encrypt_message(message, cipher)
+                        clientSocket.send(message)
+                        continue #invalid content
                     
                     fileSize = str(os.stat(fileName).st_size)
                     fileSizeSend = encrypt_message(fileSize, cipher)

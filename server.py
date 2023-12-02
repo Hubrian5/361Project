@@ -131,6 +131,8 @@ def server():
                                 connectionSocket.send(ContentMessage)
                             fileSize = connectionSocket.recv(2048)
                             fileSize = decrypt_bytes(fileSize,cipher)
+                            if(fileSize == "Please make changes to your file and resumbit."): #File was too big
+                                continue
                             bytes_read = 0
                             messageContents = ""
                             while(bytes_read < int(fileSize)): #get full content length
