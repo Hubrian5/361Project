@@ -325,7 +325,8 @@ def get_files(userName):
 
 '''
 def read_file(sender, title, userName):
-    fPath = ("./{user}/" + sender + "_" + title + ".txt").format(user = userName)
+    pathTitle = title.replace(" ", "_")
+    fPath = ("./{user}/" + sender + "_" + pathTitle + ".txt").format(user = userName)
     #print(fPath) #Dev check
     fileSize = str(os.stat(fPath).st_size)
     content = b""

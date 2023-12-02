@@ -112,8 +112,10 @@ def client():
                         fileOpen.close()
                         if(len(fileContents) > 1000000):
                             print("Message contents too long, message contents must be less than 1000000 characters")
+                            fileName = ""
                         elif(len(fileContents) == 0):
                             print("Why would you send an email with nothing?")
+                            fileName = ""
                         else:
                             break
                     
@@ -134,8 +136,10 @@ def client():
                         emailMessage = input(message)
                         if(len(emailMessage) > 1000000):
                             print("Message contents too long, message contents must be less than 1000000 characters")
+                            emailMessage = ""
                         elif(len(emailMessage) == 0):
                             print("Why would you send an email with nothing?")
+                            emailMessage = ""
                         else:
                             break 
                     emailSize = str(len(emailMessage))
