@@ -70,7 +70,7 @@ def server():
                 passwordList = rsa_server.decrypt(passwordList)
                 passwordList = unpad(passwordList,16)  
                 passwordList = passwordList.decode('ascii')
-                passwordList = passwordList.split(";")
+                passwordList = passwordList.split(";") #split the contents so that we can check the clients timestamp
                 password = passwordList[0]
                 clientTimestamp = float(passwordList[1])
                 if(userName in realUserName): #Check if user name valid
@@ -89,8 +89,8 @@ def server():
                     print("The received client information: " + userName + " is invalid (ConnectionTerminated).")
                     connectionSocket.send(message)
                     break
-                difference = timestamp - clientTimestamp
-                if(difference >= 0.1):
+                difference = timestamp - clientTimestamp #get time difference
+                if(difference >= 0.1): #if differnece is large, then this is an old log in attempt
                     message = "Invalid username or password.\nTerminating.".encode('ascii')
                     print("The user " + userName + "connection has been terminated since the difference in timestamps is to large")
                     print(userName + " difference was " + str(difference) + " which is > 0.1")
