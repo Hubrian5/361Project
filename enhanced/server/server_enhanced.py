@@ -75,10 +75,19 @@ def server():
                 clientTimestamp = float(passwordList[1])
                 if(userName in realUserName): #Check if user name valid
                     if(realUsersPasswords[userName] == password): #If user name is valid check password
-                        print("Connection Accepted and Symmetric Key Generated for client: " + userName) #Password and user name match
-                        message, cipher = create_cipher(userName)
-                        #print(cipher, message) dev check
-                        connectionSocket.send(message) 
+                        difference = timestamp - clientTimestamp #get time difference
+                        if(difference >= 0.1): #if differnece is large, then this is an old log in attempt
+                            message = "Invalid username or password.\nTerminating.".encode('ascii')
+                            print("The user " + userName + " connection has been terminated since the difference in timestamps is to large")
+                            print(userName + " difference was " + str(difference) + " which is > 0.1")
+                            connectionSocket.send(message)
+                            break
+                        else:
+                            print(userName + " timestamp " + str(clientTimestamp) + " accepeted, difference: " + str(difference))
+                            print("Connection Accepted and Symmetric Key Generated for client: " + userName) #Password and user name match
+                            message, cipher = create_cipher(userName)
+                            #print(cipher, message) dev check
+                            connectionSocket.send(message) 
                     else: #Password did not match
                         message = "Invalid username or password.\nTerminating.".encode('ascii')
                         connectionSocket.send(message)
@@ -89,15 +98,6 @@ def server():
                     print("The received client information: " + userName + " is invalid (ConnectionTerminated).")
                     connectionSocket.send(message)
                     break
-                difference = timestamp - clientTimestamp #get time difference
-                if(difference >= 0.1): #if differnece is large, then this is an old log in attempt
-                    message = "Invalid username or password.\nTerminating.".encode('ascii')
-                    print("The user " + userName + "connection has been terminated since the difference in timestamps is to large")
-                    print(userName + " difference was " + str(difference) + " which is > 0.1")
-                    connectionSocket.send(message)
-                    break
-                else:
-                    print(userName + "timestamp " + str(clientTimestamp) + " accepeted, difference: " + str(difference))
                 
                 # Receive OK from client
                 confirm = connectionSocket.recv(2048)
