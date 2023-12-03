@@ -72,7 +72,7 @@ def client():
                 message = clientSocket.recv(2048)
                 message = decrypt_bytes(message, cipher)
             if choice == '1':
-                #print("Entering Sp1") #dev check
+                print("Entering Sp1") #dev check
                 #Enter client destinations
                 while(True):
                     destination = input(message)
@@ -98,12 +98,7 @@ def client():
                 #Pick if user wants to load from a file or not
                 message = clientSocket.recv(2048)
                 message = decrypt_bytes(message, cipher)
-                while(True):
-                    query = input(message)
-                    if query not in ['y', 'n', 'Y', 'N'] or len(query) != 1:
-                        print("Please enter Y or N")
-                    else:
-                        break
+                query = input(message)
                 query = query.upper()
                 sQuery = encrypt_message(query, cipher)
                 clientSocket.send(sQuery)
@@ -117,14 +112,14 @@ def client():
                     fileOpen.close()
                     if(len(fileContents) > 1000000):
                         print("Message contents too long, message contents must be less than 1000000 characters")
-                        message = "Please make changes to your file and resubmit."
+                        message = "Please make changes to your file and resumbit."
                         print(message)
                         message = encrypt_message(message, cipher)
                         clientSocket.send(message)
                         continue #invalid content
                     elif(len(fileContents) == 0):
                         print("Why would you send an email with nothing?")
-                        message = "Please make changes to your file and resubmit."
+                        message = "Please make changes to your file and resumbit."
                         print(message)
                         message = encrypt_message(message, cipher)
                         clientSocket.send(message)
@@ -161,7 +156,7 @@ def client():
                 #client is finished sending email data
                 
             if choice == '2':
-                #print("Requesting Inbox Info")  # dev check
+                print("Requesting Inbox Info")  # dev check
 
                 # Receive the inbox message from the server. Prints only columns if empty inbox
                 print(message)
@@ -173,26 +168,31 @@ def client():
                 
             if choice == '3':
                 index = input(message)
-                # Need error checking for invalid email index. Then take a screenshot of test and put on pdf
                 index = encrypt_message(index, cipher)
                 clientSocket.send(index)
-                fileSize = clientSocket.recv(2048)
-                fileSize = decrypt_bytes(fileSize, cipher)
                 
-                # Sending OK to the server (needs in order to continue)
-                ok = "OK"
-                ok = encrypt_message(ok, cipher)
-                clientSocket.send(ok) 
+                #message will either be error message or fileSize
+                message = clientSocket.recv(2048)
+                message = decrypt_bytes(message, cipher)
                 
-                bytes_read = 0
-                contents = ""
-                while(bytes_read < int(fileSize)): #get full content length
-                    bytesRecv = clientSocket.recv(2048)
-                    bytesRecv = decrypt_bytes(bytesRecv, cipher)
-                    contents += bytesRecv #Store converted message bytes into readable text
-                    bytes_read += len(bytesRecv.encode('ascii'))
-                print(contents)
+                if message.isdigit() == True:
+                    fileSize = int(message)
+                    # Sending OK to the server (needs in order to continue)
+                    ok = "OK"
+                    ok = encrypt_message(ok, cipher)
+                    clientSocket.send(ok) 
                 
+                    bytes_read = 0
+                    contents = ""
+                    while(bytes_read < fileSize): #get full content length
+                        bytesRecv = clientSocket.recv(2048)
+                        bytesRecv = decrypt_bytes(bytesRecv, cipher)
+                        contents += bytesRecv #Store converted message bytes into readable text
+                        bytes_read += len(bytesRecv.encode('ascii'))
+                    print(contents)
+                
+                else:
+                    print(message)
                 # Sending OK to the server (needs in order to continue)
                 ok = "OK"
                 ok = encrypt_message(ok, cipher)
