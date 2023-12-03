@@ -72,7 +72,7 @@ def client():
                 message = clientSocket.recv(2048)
                 message = decrypt_bytes(message, cipher)
             if choice == '1':
-                print("Entering Sp1") #dev check
+                #print("Entering Sp1") #dev check
                 #Enter client destinations
                 while(True):
                     destination = input(message)
@@ -98,7 +98,12 @@ def client():
                 #Pick if user wants to load from a file or not
                 message = clientSocket.recv(2048)
                 message = decrypt_bytes(message, cipher)
-                query = input(message)
+                while(True):
+                    query = input(message)
+                    if query not in ['y', 'n', 'Y', 'N'] or len(query) != 1:
+                        print("Please enter Y or N")
+                    else:
+                        break
                 query = query.upper()
                 sQuery = encrypt_message(query, cipher)
                 clientSocket.send(sQuery)
@@ -112,14 +117,14 @@ def client():
                     fileOpen.close()
                     if(len(fileContents) > 1000000):
                         print("Message contents too long, message contents must be less than 1000000 characters")
-                        message = "Please make changes to your file and resumbit."
+                        message = "Please make changes to your file and resubmit."
                         print(message)
                         message = encrypt_message(message, cipher)
                         clientSocket.send(message)
                         continue #invalid content
                     elif(len(fileContents) == 0):
                         print("Why would you send an email with nothing?")
-                        message = "Please make changes to your file and resumbit."
+                        message = "Please make changes to your file and resubmit."
                         print(message)
                         message = encrypt_message(message, cipher)
                         clientSocket.send(message)
@@ -156,7 +161,7 @@ def client():
                 #client is finished sending email data
                 
             if choice == '2':
-                print("Requesting Inbox Info")  # dev check
+                #print("Requesting Inbox Info")  # dev check
 
                 # Receive the inbox message from the server. Prints only columns if empty inbox
                 print(message)
@@ -168,6 +173,7 @@ def client():
                 
             if choice == '3':
                 index = input(message)
+                # Need error checking for invalid email index. Then take a screenshot of test and put on pdf
                 index = encrypt_message(index, cipher)
                 clientSocket.send(index)
                 fileSize = clientSocket.recv(2048)

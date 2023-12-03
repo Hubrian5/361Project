@@ -131,7 +131,7 @@ def server():
                                 connectionSocket.send(ContentMessage)
                             fileSize = connectionSocket.recv(2048)
                             fileSize = decrypt_bytes(fileSize,cipher)
-                            if(fileSize == "Please make changes to your file and resumbit."): #File was too big
+                            if(fileSize == "Please make changes to your file and resubmit."): #File was too big
                                 continue
                             bytes_read = 0
                             messageContents = ""
@@ -183,7 +183,7 @@ def server():
                                 inbox_message = column_template.format(*column_names) + '\n'
                                 
                                 if not emails_info:
-                                    empty_inbox_message = "Inbox is empty"
+                                    empty_inbox_message = "Inbox is empty\n"
                                     encrypted_empty_inbox_message = encrypt_message(empty_inbox_message, cipher)
                                     connectionSocket.send(encrypted_empty_inbox_message)
                                 else:
@@ -324,7 +324,7 @@ def get_files(userName):
     return emails_info
 
 '''
-Function creates the name of file with everything in parameters, gets the file size, 
+Function creates the name of file with everything in parameters, gets the file size,
 reads the file in binary and returns the file size and contents of file.
 '''
 def read_file(sender, title, userName):
