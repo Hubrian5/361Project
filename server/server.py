@@ -324,7 +324,8 @@ def get_files(userName):
     return emails_info
 
 '''
-
+Function creates the name of file with everything in parameters, gets the file size,
+reads the file in binary and returns the file size and contents of file.
 '''
 def read_file(sender, title, userName):
     pathTitle = title.replace(" ", "_")
