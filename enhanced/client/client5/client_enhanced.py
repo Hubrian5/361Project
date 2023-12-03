@@ -177,23 +177,29 @@ def client():
                 index = input(message)
                 index = encrypt_message(index, cipher)
                 clientSocket.send(index)
-                fileSize = clientSocket.recv(2048)
-                fileSize = decrypt_bytes(fileSize, cipher)
                 
-                # Sending OK to the server (needs in order to continue)
-                ok = "OK"
-                ok = encrypt_message(ok, cipher)
-                clientSocket.send(ok) 
+                #message will either be error message or fileSize
+                message = clientSocket.recv(2048)
+                message = decrypt_bytes(message, cipher)
                 
-                bytes_read = 0
-                contents = ""
-                while(bytes_read < int(fileSize)): #get full content length
-                    bytesRecv = clientSocket.recv(2048)
-                    bytesRecv = decrypt_bytes(bytesRecv, cipher)
-                    contents += bytesRecv #Store converted message bytes into readable text
-                    bytes_read += len(bytesRecv.encode('ascii'))
-                print(contents)
+                if message.isdigit() == True:
+                    fileSize = int(message)
+                    # Sending OK to the server (needs in order to continue)
+                    ok = "OK"
+                    ok = encrypt_message(ok, cipher)
+                    clientSocket.send(ok) 
                 
+                    bytes_read = 0
+                    contents = ""
+                    while(bytes_read < fileSize): #get full content length
+                        bytesRecv = clientSocket.recv(2048)
+                        bytesRecv = decrypt_bytes(bytesRecv, cipher)
+                        contents += bytesRecv #Store converted message bytes into readable text
+                        bytes_read += len(bytesRecv.encode('ascii'))
+                    print(contents)
+                
+                else:
+                    print(message)
                 # Sending OK to the server (needs in order to continue)
                 ok = "OK"
                 ok = encrypt_message(ok, cipher)
